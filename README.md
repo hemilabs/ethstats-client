@@ -1,5 +1,4 @@
-Ethereum Network Intelligence API
-=================================
+# Ethereum Network Intelligence API
 
 This is the backend service which runs along with ethereum nodes and tracks the network status, fetches information through JSON-RPC and connects through WebSockets to an [ethstats-server](https://github.com/goerli/ethstats-server) to feed information.
 
