@@ -39,9 +39,9 @@ jobs:
             echo $VKE_TEST_KUBECONFIG > ./kubeconfig.yaml
             export KUBECONFIG=$PWD/kubeconfig.yaml
 
-        - name: Update Image Tag in Server
+        - name: Update Image Tag in Client
           run: |
-                kustomize edit set image hemilabs/ethstats-server:latest=hemilabs/ethstats-client:${{ env.tag }}
+                kustomize edit set image hemilabs/ethstats-client:latest=hemilabs/ethstats-client:${{ env.tag }}
                 kustomize edit set namespace ${{ env.namespace }}
           working-directory: ./infrastructure/ethstats-client
     
