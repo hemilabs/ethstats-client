@@ -1,55 +1,49 @@
-name: Ethstats Web Build/Push & VKE Deployment 
+name: Ethstats Web Build/Push & VKE Deployment
 on:
   workflow_run:
-    workflows: ["Build Docker image"]
     types:
       - completed
-      
+    workflows:
+      - "Build Docker image"
+
 jobs:
   dockerhubpush-VKEdeploy:
-
     name: Deploy ethstats-client
     runs-on: ubuntu-latest
     steps:
-        - name: Get tag
-          id: vars
-          run: |
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
-            echo "tag=${TAG_NAME}" >> $GITHUB_ENV
-            if [[ $TAG_NAME == "mainnet-v"* ]]; then
-              echo "namespace=ethstats-main" >> $GITHUB_ENV
-            elif [[ $TAG_NAME == "testnet-v"* ]]; then
-              echo "namespace=ethstats" >> $GITHUB_ENV
-            else
-              echo "::error::Unrecognized tag format: $TAG_NAME"
-              exit 1
-            fi
-
-        - name: Checkout code
-          uses: actions/checkout@v3
-
-        - name: Install kubectl
-          uses: azure/k8s-set-context@v3
-          with:
-            kubeconfig: ${{ secrets.VKE_TEST_KUBECONFIG }}
-        
-        - name: Install Kustomize
-          uses: imranismail/setup-kustomize@v2
-  
-        - name: Configure K8s Cluster Access for VKE
-          env:
-            VKE_TEST_KUBECONFIG: ${{ secrets.VKE_TEST_KUBECONFIG }}
-          run: |
-            echo $VKE_TEST_KUBECONFIG > ./kubeconfig.yaml
-            export KUBECONFIG=$PWD/kubeconfig.yaml
-
-        - name: Update Image Tag in Client
-          run: |
-                kustomize edit set image hemilabs/ethstats-client:latest=hemilabs/ethstats-client:${{ env.tag }}
-                kustomize edit set namespace ${{ env.namespace }}
-          working-directory: ./infrastructure/ethstats-client
-    
-        - name: Deploy to VKE
-          run: |
-                kustomize build ./infrastructure/ethstats-client
-                kubectl apply -k ./infrastructure/ethstats-client
+      - id: vars
+        name: Get tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_ENV
+          if [[ $TAG_NAME == "mainnet-v"* ]]; then
+            echo "namespace=ethstats-main" >> $GITHUB_ENV
+          elif [[ $TAG_NAME == "testnet-v"* ]]; then
+            echo "namespace=ethstats" >> $GITHUB_ENV
+          else
+            echo "::error::Unrecognized tag format: $TAG_NAME"
+            exit 1
+          fi
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.VKE_TEST_KUBECONFIG }}
+      - name: Install Kustomize
+        uses: imranismail/setup-kustomize@v2
+      - name: Configure K8s Cluster Access for VKE
+        run: |
+          echo $VKE_TEST_KUBECONFIG > ./kubeconfig.yaml
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+        env:
+          VKE_TEST_KUBECONFIG: ${{ secrets.VKE_TEST_KUBECONFIG }}
+      - name: Update Image Tag in Client
+        run: |
+          kustomize edit set image hemilabs/ethstats-client:latest=hemilabs/ethstats-client:${{ env.tag }}
+          kustomize edit set namespace ${{ env.namespace }}
+        working-directory: ./infrastructure/ethstats-client
+      - name: Deploy to VKE
+        run: |
+          kustomize build ./infrastructure/ethstats-client
+          kubectl apply -k ./infrastructure/ethstats-client
